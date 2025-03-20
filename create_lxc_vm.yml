@@ -1,0 +1,28 @@
+---
+- name: Create LXC container using Proxmox
+  hosts: prox_host
+  tasks:
+    - name: Check if Ubuntu image exists, download it if not
+      community.general.proxmox:
+        api: https://your-proxmox-server:8006/api2/
+        user: root@pam
+        password: your_root_password
+        node: your_node
+        vmid: your_vmid
+        content: local:iso/ubuntu.iso
+        storage: local-zfs
+      register: ubuntu_image
+      failed_when: "'HTTP 404' not in ubuntu_image.message"
+    
+    - name: Create the LXC container if it does not exist
+      community.general.proxmox:
+        api: https://your-proxmox-server:8006/api2/
+        user: root@pam
+        password: your_root_password
+        node: your_node
+        vmid: your_vmid
+        content: local:vztmpl/ubuntu-18.04.5-standard_12.04.1-1_amd64.tar.gz
+        storage: local-zfs
+        hostname: your_hostname
+      register: new_container
+      when: ubuntu_image is skipped
