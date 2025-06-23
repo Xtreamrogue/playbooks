@@ -11,10 +11,11 @@
       changed_when: false
       run_once: true
 
-    - name: Update Proxmox on online nodes
+    - name: Include update and reboot tasks for online nodes
       include_tasks: update_and_reboot.yml
+      vars:
+        delegate_target: "{{ item }}"
       when: node_status.results[loop.index0].skipped is not defined
       loop: "{{ ansible_play_hosts }}"
       loop_control:
         loop_var: item
-      delegate_to: "{{ item }}"
