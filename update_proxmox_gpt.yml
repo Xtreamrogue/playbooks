@@ -2,6 +2,7 @@
 - hosts: all
   gather_facts: false
   tasks:
+
     - name: Check if node is reachable
       shell: "echo 'reachable'"
       delegate_to: "{{ item }}"
@@ -11,11 +12,31 @@
       changed_when: false
       run_once: true
 
-    - name: Include update and reboot tasks for online nodes
-      include_tasks: update_and_reboot.yml
-      vars:
-        delegate_target: "{{ item }}"
-      when: node_status.results[loop.index0].skipped is not defined
-      loop: "{{ ansible_play_hosts }}"
+    - name: Set fact for reachable nodes
+      set_fact:
+        reachable_nodes: >-
+          {{ node_status.results
+             | selectattr('unreachable', 'undefined')
+             | selectattr('skipped', 'undefined')
+             | map(attribute='item')
+             | list }}
+
+    - name: Debug list of reachable nodes (optional)
+      debug:
+        var: reachable_nodes
+
+    - name: Update and reboot each reachable node
+      block:
+        - name: Install updates
+          apt:
+            update_cache: yes
+            upgrade: dist
+          become: yes
+
+        - name: Reboot the node
+          reboot:
+          become: yes
+      loop: "{{ reachable_nodes }}"
       loop_control:
-        loop_var: item
+        loop_var: target_node
+      delegate_to: "{{ target_node }}"
