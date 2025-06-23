@@ -12,3 +12,6 @@
         autoremove: yes
         autoclean: yes
       when: ansible_os_family == "Debian"
+    - name: Reboot reachable node
+      reboot:
+      become: yes
