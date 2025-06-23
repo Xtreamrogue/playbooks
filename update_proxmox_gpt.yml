@@ -12,18 +12,9 @@
       run_once: true
 
     - name: Update Proxmox on online nodes
-      block:
-        - name: Install updates
-          apt:
-            update_cache: yes
-            upgrade: dist
-          become: yes
-
-        - name: Reboot the node
-          reboot:
-          become: yes
-      when: node_status.results[0].skipped is not defined # Check if delegate_to task was skipped
-
-      loop: "{{ ansible_play_hosts }}"
-      delegate_to: "{{ item }}"
+      include_tasks: update_and_reboot.yml
       when: node_status.results[loop.index0].skipped is not defined
+      loop: "{{ ansible_play_hosts }}"
+      loop_control:
+        loop_var: item
+      delegate_to: "{{ item }}"
