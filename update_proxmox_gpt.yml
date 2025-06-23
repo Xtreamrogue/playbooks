@@ -1,6 +1,8 @@
 ---
 - hosts: all
   gather_facts: false
+  vars:
+    ansible_python_interpreter: /usr/bin/python3  # Optional: suppress Python warning
   tasks:
 
     - name: Check if node is reachable
@@ -21,21 +23,23 @@
              | map(attribute='item')
              | list }}
 
-    - name: Debug list of reachable nodes (optional)
+    - name: Debug reachable nodes
       debug:
         var: reachable_nodes
 
-    - name: Update and reboot each reachable node
-      block:
-        - name: Install updates
-          apt:
-            update_cache: yes
-            upgrade: dist
-          become: yes
+    - name: Install updates on reachable nodes
+      apt:
+        update_cache: yes
+        upgrade: dist
+      become: yes
+      loop: "{{ reachable_nodes }}"
+      loop_control:
+        loop_var: target_node
+      delegate_to: "{{ target_node }}"
 
-        - name: Reboot the node
-          reboot:
-          become: yes
+    - name: Reboot reachable nodes
+      reboot:
+      become: yes
       loop: "{{ reachable_nodes }}"
       loop_control:
         loop_var: target_node
