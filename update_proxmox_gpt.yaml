@@ -1,0 +1,29 @@
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if node is reachable
+      shell: "echo 'reachable'"
+      delegate_to: "{{ item }}"
+      register: node_status
+      ignore_errors: true
+      loop: "{{ ansible_play_hosts }}"
+      changed_when: false
+      run_once: true
+
+    - name: Update Proxmox on online nodes
+      block:
+        - name: Install updates
+          apt:
+            update_cache: yes
+            upgrade: dist
+          become: yes
+
+        - name: Reboot the node
+          reboot:
+          become: yes
+      when: node_status.results[0].skipped is not defined # Check if delegate_to task was skipped
+
+      loop: "{{ ansible_play_hosts }}"
+      delegate_to: "{{ item }}"
+      when: node_status.results[loop.index0].skipped is not defined
